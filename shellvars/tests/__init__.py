@@ -17,3 +17,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+import os
+
+from testscenarios import generate_scenarios
+
+def load_tests(loader, tests, pattern):
+    this_dir = os.path.dirname(__file__)
+    tests.addTests(loader.discover(start_dir=this_dir, pattern=pattern))
+    return loader.suiteClass(generate_scenarios(tests))

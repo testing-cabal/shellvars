@@ -18,20 +18,44 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from hypothesis import given
+# To debug hypothesis
+# from hypothesis import Settings, Verbosity
+# Settings.default.verbosity = Verbosity.verbose
+import hypothesis.strategies as st
 from testtools import TestCase
 from testtools.matchers import Equals
 
-from shellvars import evaluate
+from shellvars import evaluate, EMPTY, SKIP
 
 
 class TestEvaluate(TestCase):
 
+    scenarios = [
+        ('absent-empty', {'absent': EMPTY}),
+        ('absent-skip', {'absent': SKIP}),
+        ]
+
     def test_nothing(self):
         self.expectThat(
-            evaluate("", {}),
+            evaluate("", {}, self.absent),
             Equals(""))
 
     def test_simple(self):
         self.expectThat(
-            evaluate("pre $BAR post", {"BAR": "quux"}),
+            evaluate("pre $BAR post", {"BAR": "quux"}, self.absent),
             Equals("pre quux post"))
+
+    @given(st.text())
+    def test_hypothesis(self, a_string):
+        evaluate(a_string, {}, self.absent)
+
+    def test_simple_absent(self):
+        if self.absent is EMPTY:
+            result = ""
+        else:
+            result = "$BAR"
+        self.expectThat(
+            evaluate("pre $BAR post", {}, self.absent),
+            Equals("pre " + result + " post"))
+
