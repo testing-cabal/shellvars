@@ -20,6 +20,12 @@
 
 __all__ = ['evaluate']
 
+import re
+
+
+var_re = re.compile('(\$[A-Za-z_][A-Za-z0-9_]*)')
+
+
 def evaluate(expression, variables):
     """Evaluate expression with variables.
 
@@ -27,4 +33,6 @@ def evaluate(expression, variables):
     :param variables: The variables available to the expression.
     :return: A string.
     """
-    return ""
+    def replace(var_match):
+        return variables[var_match.group(0)[1:]]
+    return var_re.sub(replace, expression)

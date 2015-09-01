@@ -30,3 +30,8 @@ class TestEvaluate(TestCase):
         self.expectThat(
             evaluate("", {}),
             Equals(""))
+
+    def test_simple(self):
+        self.expectThat(
+            evaluate("pre $BAR post", {"BAR": "quux"}),
+            Equals("pre quux post"))
