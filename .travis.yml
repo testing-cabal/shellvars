@@ -32,4 +32,4 @@ install:
 
 script:
   - python -m testtools.run discover 
-  - rst2html.py README.rst README.html
+  - rst2html.py --strict README.rst README.html

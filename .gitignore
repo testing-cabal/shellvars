@@ -3,3 +3,8 @@
 *.egg-info
 *.pyc
 .hypothesis
+AUTHORS
+ChangeLog
+README.html
+build
+dist
