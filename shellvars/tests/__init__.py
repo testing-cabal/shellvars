@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import doctest
 import os
 
 from testscenarios import generate_scenarios
@@ -25,4 +26,7 @@ from testscenarios import generate_scenarios
 def load_tests(loader, tests, pattern):
     this_dir = os.path.dirname(__file__)
     tests.addTests(loader.discover(start_dir=this_dir, pattern=pattern))
+    doctest.set_unittest_reportflags(doctest.REPORT_ONLY_FIRST_FAILURE)
+    tests.addTest(
+        doctest.DocFileSuite("../../README.rst", optionflags=doctest.ELLIPSIS))
     return loader.suiteClass(generate_scenarios(tests))
