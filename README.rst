@@ -11,7 +11,7 @@
       :target: https://travis-ci.org/testing-cabal/shellvars
 
 .. _Shellvars Homepage: https://github.com/testing-cabal/shellvars
-.. _BSD License: http://github.com/testing-cabal/shellvars/blob/master/LICENSE.txt
+.. _MIT License: http://github.com/testing-cabal/shellvars/blob/master/LICENSE.txt
 .. _Shellvars Docs: https://pypi.python.org/pypi/shellvars
 .. _Shellvars on PyPI: http://pypi.python.org/pypi/shellvars
 
