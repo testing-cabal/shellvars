@@ -1,3 +1,20 @@
+:Homepage: `Shellvars Homepage`_
+:Download: `Shellvars on PyPI`_
+:Documentation: `Shellvars Docs`_
+:License: `MIT License`_
+:Support: `Mailing list (testing-in-python@lists.idyll.org)
+ <http://lists.idyll.org/listinfo/testing-in-python>`_
+:Issue tracker: `Github Issues
+ <https://github.com/testing-cabal/shellvars/issues>`_
+:Build status:
+  .. image:: https://travis-ci.org/testing-cabal/shellvars.svg?branch=master
+      :target: https://travis-ci.org/testing-cabal/shellvars
+
+.. _Shellvars Homepage: https://github.com/testing-cabal/shellvars
+.. _BSD License: http://github.com/testing-cabal/shellvars/blob/master/LICENSE.txt
+.. _Shellvars Docs: https://pypi.python.org/pypi/shellvars
+.. _Shellvars on PyPI: http://pypi.python.org/pypi/shellvars
+
 =========
 Shellvars
 =========
