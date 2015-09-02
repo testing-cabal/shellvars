@@ -20,15 +20,49 @@
 
 """Evaluate shell variable expressions."""
 
-__all__ = ['evaluate', 'EMPTY', 'SKIP']
+__all__ = ['evaluate', 'EMPTY', 'SKIP', 'EvaluationError']
 
-import re
+from collections import namedtuple
+
+import parsley
+from parsley import makeGrammar
+
+_Literal = namedtuple("_Literal", "value")
+_SimpleExpression = namedtuple("_SimpleExpression", "name text")
+_Expression = namedtuple("Expression", "name null op word text")
 
 
-var_re = re.compile('(\$[A-Za-z_][A-Za-z0-9_]*)')
+_grammar_text = """
+name = <(letter|'_')(letterOrDigit|'_')*>
+expr = simple_expr | simple_brackets | default_expr
+simple_expr = <('$' name:name)>:text -> SimpleExpression(name, text)
+simple_brackets = <'$' '{' name:name '}' >:text -> SimpleExpression(name, text)
+default_expr = < '$' '{' name:name ':'?:null <'-'|'='|'?'|'+'>:op nestedtokens:word '}' >:text -> Expression(name, null, op, word, text)
+notexpr = <(~expr anything)+>:value -> Literal(value)
+string = tokens:tokens end -> tokens
+tokens = (expr | notexpr)*:tokens -> tokens
+nestedtokens = (expr | not_expr_no_endbrace )*:tokens -> tokens
+not_expr_no_endbrace = <(~expr ~'}' anything)+>:value -> Literal(value)
+"""
+_grammar = makeGrammar(_grammar_text, {
+    'Expression': _Expression,
+    'SimpleExpression': _SimpleExpression,
+    'Literal': _Literal,
+    })
 
-EMPTY = True
-SKIP = False
+
+class _Constant:
+    def __init__(self, name):
+        self.name = name
+    def __repr__(self):
+        return 'Constant<%(name)s>' % self.__dict__
+EMPTY = _Constant('EMPTY')
+SKIP = _Constant('SKIP')
+_sentinel = _Constant('sentinel')
+
+
+class EvaluationError(Exception):
+    pass
 
 
 def evaluate(expression, variables, absent=EMPTY):
@@ -39,14 +73,104 @@ def evaluate(expression, variables, absent=EMPTY):
     :param absent: If EMPTY then variables that are not present in variables
         are treated as having the value ''. If SKIP then such variables are
         not evaluated at all.
-    :return: A string.
+    :return: A tuple (string, dict) where the string is the result of
+        evaluating the expression, and the dict contains any variable
+        assignments performed by the expression.
     """
     if absent not in (EMPTY, SKIP):
         raise ValueError("invalid value for absent %r" % (absent,))
-    def replace(var_match):
-        varname = var_match.group(0)[1:]
-        if absent is SKIP and varname not in variables:
-            return var_match.group(0)
-        varvalue = variables.get(varname, '')
-        return varvalue
-    return var_re.sub(replace, expression)
+    variables = dict(variables)
+    g = _grammar(expression)
+    return _evaluate(g.string(), variables, absent)
+
+def _evaluate(nodes, variables, absent):
+    output = []
+    assignments = {}
+    for node in nodes:
+        unset = False
+        if type(node) == _Literal:
+            output.append(node.value)
+        elif type(node) == _SimpleExpression:
+            value = variables.get(node.name, _sentinel)
+            if value is _sentinel:
+                if absent is SKIP:
+                    output.append(node.text)
+                    continue
+                else:
+                    value = ''
+            output.append(value)
+        elif type(node) == _Expression:
+            if node.op == '-':
+                # Default
+                value = variables.get(node.name, _sentinel)
+                if value is _sentinel:
+                    if absent is SKIP:
+                        output.append(node.text)
+                        continue
+                    else:
+                        unset = True
+                if unset or not value:
+                    if unset or node.null is not None:
+                        value, _assign = _evaluate(node.word, variables, absent)
+                        assignments.update(_assign)
+                    else:
+                        value = ''
+                output.append(value)
+            elif node.op == '=':
+                # Assignment
+                value = variables.get(node.name, _sentinel)
+                if value is _sentinel:
+                    if absent is SKIP:
+                        output.append(node.text)
+                        continue
+                    else:
+                        unset = True
+                if unset or not value:
+                    if unset or node.null is not None:
+                        value, _assign = _evaluate(node.word, variables, absent)
+                        assignments.update(_assign)
+                    else:
+                        value = ''
+                output.append(value)
+                assignments[node.name] = value
+                variables[node.name] = value
+            elif node.op == '?':
+                # Error
+                value = variables.get(node.name, _sentinel)
+                if value is _sentinel:
+                    if absent is SKIP:
+                        output.append(node.text)
+                        continue
+                    else:
+                        unset = True
+                if unset or not value:
+                    if unset or node.null is not None:
+                        value, _ = _evaluate(node.word, variables, absent)
+                        if value:
+                            raise EvaluationError(value)
+                        else:
+                            raise EvaluationError(
+                                "Variable '%s' null or unset." % (node.name,))
+                    else:
+                        value = ''
+                output.append(value)
+            elif node.op == '+':
+                # Alternative value
+                value = variables.get(node.name, _sentinel)
+                if value is _sentinel:
+                    if absent is SKIP:
+                        output.append(node.text)
+                        continue
+                    else:
+                        unset = True
+                if unset or not value and node.null:
+                    value = ''
+                else:
+                        value, _assign = _evaluate(node.word, variables, absent)
+                        assignments.update(_assign)
+                output.append(value)
+            else:
+                raise Exception("Unhandled operation")
+        else:
+            raise Exception('Unknown node type')
+    return ''.join(output), assignments
