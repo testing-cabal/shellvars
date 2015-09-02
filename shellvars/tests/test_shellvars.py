@@ -18,14 +18,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from hypothesis import given
+try:
+    from hypothesis import given
 # To debug hypothesis
 # from hypothesis import Settings, Verbosity
 # Settings.default.verbosity = Verbosity.verbose
-import hypothesis.strategies as st
+    import hypothesis.strategies as st
+except:
+    given = None
 from testscenarios import multiply_scenarios
-from testtools import TestCase
+from testtools import TestCase, skip
 from testtools.matchers import Equals, Raises, raises, Matcher
+
+if given is None:
+    # Hypothesis not available
+    def text():
+        pass
+    from collections import namedtuple
+    st = namedtuple('st', 'text')(text)
+    def given(thing):
+        return skip("Hypothesis not importable")
+
 
 from shellvars import (
     EMPTY,
